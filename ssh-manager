@@ -1,0 +1,37 @@
+#!/bin/sh
+if [ $# == 4 -a "$1" = "-a" ]; then
+	HOSTEXISTS=`cat /usr/local/bin/ssh-data | fgrep "$3" | wc -l`
+	if [ $HOSTEXISTS -gt 0 ]; then
+		>&2 echo "host already exists"
+		exit 
+	fi
+	NICKNAMEEXISTS=`cat /usr/local/bin/ssh-data | fgrep "$2" | wc -l`
+	if [ $NICKNAMEEXISTS -gt 0 ]; then
+		>&2 echo "nickname already exists"
+		exit 
+	fi
+	FILE=`cat /usr/local/bin/ssh-data`
+	PWD=`pwd`
+	echo "$FILE\n$2 $3 $PWD/$4" > /usr/local/bin/ssh-data
+	echo "added $3 as $1 to manager"
+	exit
+elif [ $# == 1 ]; then
+	NAMELINE=`cat /usr/local/bin/ssh-data | fgrep "$1" | wc -l`
+	if [ $NAMELINE == 0 ]; then
+		>&2 echo "name does not exist"
+		exit 
+	fi
+	if [ $NAMELINE -gt 1 ]; then
+		>&2 echo "name exists multiple times"
+		exit 
+	fi
+	NAMELINE=`cat /usr/local/bin/ssh-data | fgrep "$1"`
+	HOST=`echo "$NAMELINE" | sed -E 's/^[^ ]+ ([^ ]+) [^ ]*$/\1/g'`
+	KEY=`echo "$NAMELINE" | sed -E 's/^[^ ]+ [^ ]+ ([^ ]*)$/\1/g'`
+	PWD=`pwd`
+	ssh "$HOST" -i "$KEY"
+	exit 
+else
+	echo "Usage: ssh-manager [-a] nickname [user@host] [key]"
+fi
+
